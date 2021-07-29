@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name:  HealthProbe
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-deployment
+spec:
+  selector:
+    matchLabels:
+      app: health
+  template:
+    metadata:
+      labels:
+        app: health
+    spec:
+      containers:
+      - name: health
+        image: apiokta:latest
+        livenessProbe:
+          httpGet:
+            port: 80
+            path: /api/live
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            port: 80
+            path: /api/ready
+          successThreshold: 3
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: health
+  ports:
+  - port: 80
+    targetPort: 80
